@@ -79,7 +79,8 @@ def main(archivo_input):
     nt = np.int(nx*ny)
 
     xs = np.arange(x_ini+dx/2, x_fin,dx)
-
+    ys = np.arange(y_ini+dy/2, y_fin,dy)
+    
     print("Cantidad de nodos totales en 'x': {:d}".format(nx))
     print("Cantidad de nodos totales en 'y': {:d}".format(ny))
     print("")
@@ -172,9 +173,11 @@ def main(archivo_input):
         # Impresión según intervalo de tiempo     
         if (t/60)%t_sol==0:
             arch_sol = "cont_{:.1f}".format(t)
-            arch_img = "sol_{:03d}min_y{:03.1f}m.png".format(np.int(t/60),y_img*dy)
+            arch_img1 = "sol_{:03d}min_y{:03.1f}m.png".format(np.int(t/60),y_img*dy)
+            arch_img2 = "sol_{:03d}min_map.png".format(np.int(t/60))
             ruta_sol = os.path.join(os.getcwd(),dir_sol,arch_sol)
-            ruta_img = os.path.join(os.getcwd(),dir_img,arch_img)
+            ruta_img1 = os.path.join(os.getcwd(),dir_img,arch_img1)
+            ruta_img2 = os.path.join(os.getcwd(), dir_img, arch_img2)
 
             try:
                 os.mkdir(dir_img)
@@ -184,7 +187,7 @@ def main(archivo_input):
             # Datos de solución para el gráfico
             solucion = np.loadtxt(ruta_sol)
 
-            # Texto para el gráfico
+            # Texto para el gráfico 1D
             titulo = "C (t = {:5.1f} min, y = 0 m)".format(t/60)
             nom_x = "L$_x$ [m]"
             nom_y = "C [kg/m$^3$]"
@@ -199,7 +202,7 @@ def main(archivo_input):
             y_texto = (c_inf+c_sup)*0.5
             etiqueta="Concentración"
 
-            # Impresión del gráfico
+            # Impresión del gráfico 1D
             plt.figure()
             plt.title(titulo)
             plt.xlabel(nom_x)
@@ -209,9 +212,37 @@ def main(archivo_input):
                      va="center", ha="center")
             plt.plot(xs, solucion[y_img], "r", label=etiqueta)
             plt.legend(loc="upper right", framealpha=1)
-            plt.savefig(ruta_img)
+            plt.savefig(ruta_img1)
             plt.clf()
             plt.close()
+            
+            # Texto para el gráfico 2D
+            titulo = "C [gr/m3] (t = {:5.1f} min)".format(t/60)
+            nom_x = "x [m]"
+            nom_y = "y [m]"
+            c_inf = 0
+            orden = np.abs(np.int(np.floor(np.log10(cu_desc_cont/v_cel))))
+            c_sup = np.around(cu_desc_cont/v_cel,decimals=orden)
+            texto = "{}".format(metodo) +\
+                    "\n$\Delta$x: {:04.1f} m".format(dx) +\
+                    "\n$\Delta$y: {:04.1f} m".format(dy) +\
+                    "\n$\Delta$t: {:.1f} s".format(dt)
+            x_texto = (x_ini+x_fin)*0.875
+            y_texto = (c_inf+c_sup)*0.5
+            etiqueta="Concentración"
+            
+            solucion = np.loadtxt(ruta_sol)
+            # Impresión del gráfico 2D
+            plt.figure()
+            plt.title(titulo)
+            plt.xlabel(nom_x)
+            plt.ylabel(nom_y)
+            plt.contourf(xs,ys,solucion*1000)
+            plt.colorbar()
+            plt.savefig(ruta_img2)
+            plt.clf()
+            plt.close()
+            
 
     #**** FIN MAIN ****#
     

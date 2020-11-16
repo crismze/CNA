@@ -128,10 +128,9 @@ def main(archivo_input):
     # Dimensión de gráfico: 1D o 2D
     dim_img = np.int(vs['DIM_IMG'])
 
-    if dim_img!=1:
-        print("Impresión en gráfico implementada sólo en 1D")
+    if dim_img>2:
+        print("Impresión en gráfico implementada sólo en 1D o 2D")
         sys.exit(1)
-    else:
         pass
 
     # Nodo 'y' a lo largo del que se grafica
@@ -167,17 +166,48 @@ def main(archivo_input):
         dir_sol = "cna_tp1_sol_dx{}_dy{}_dt{}_theta{}".\
             format(dx,dy,dt,theta)
 
-        # Directorio de imágenes
-        dir_img = os.path.join(dir_sol,"imagenes_{}D_y{:.1f}m".format(dim_img,y_img*dy))
-
         # Impresión según intervalo de tiempo     
         if (t/60)%t_sol==0:
             arch_sol = "cont_{:.1f}".format(t)
-            arch_img1 = "sol_{:03d}min_y{:03.1f}m.png".format(np.int(t/60),y_img*dy)
-            arch_img2 = "sol_{:03d}min_map.png".format(np.int(t/60))
+            if dim_img == 1:
+                # Directorio de imágenes
+                dir_img = os.path.join(dir_sol,"imagenes_{}D_y{:.1f}m".format(dim_img,y_img*dy))
+                arch_img = "sol_{:03d}min_y{:03.1f}m.png".format(np.int(t/60),y_img*dy)
+                # Texto para el gráfico 1D
+                titulo = "C (t = {:5.1f} min, y = 0 m)".format(t/60)
+                nom_x = "L$_x$ [m]"
+                nom_y = "C [kg/m$^3$]"
+                c_inf = 0
+                orden = np.abs(np.int(np.floor(np.log10(cu_desc_cont/v_cel))))
+                c_sup = np.around(cu_desc_cont/v_cel,decimals=orden)
+                texto = "{}".format(metodo) +\
+                    "\n$\Delta$x: {:04.1f} m".format(dx) +\
+                    "\n$\Delta$y: {:04.1f} m".format(dy) +\
+                    "\n$\Delta$t: {:.1f} s".format(dt)
+                x_texto = (x_ini+x_fin)*0.875
+                y_texto = (c_inf+c_sup)*0.5
+                etiqueta="Concentración"
+            else :
+               # Directorio de imágenes
+                dir_img = os.path.join(dir_sol,"imagenes_{}D".format(dim_img)) 
+                arch_img = "sol_{:03d}min_map.png".format(np.int(t/60))
+                # Texto para el gráfico 2D
+                titulo = "C (t = {:5.1f} min)".format(t/60)
+                nom_x = "x [m]"
+                nom_y = "y [m]"
+                c_inf = 0
+                orden = np.abs(np.int(np.floor(np.log10(cu_desc_cont/v_cel))))
+                c_sup = np.around(cu_desc_cont/v_cel,decimals=orden)
+                texto = "{}".format(metodo) +\
+                    "\n$\Delta$x: {:04.1f} m".format(dx) +\
+                    "\n$\Delta$y: {:04.1f} m".format(dy) +\
+                    "\n$\Delta$t: {:.1f} s".format(dt)
+                x_texto = (x_ini+x_fin)*0.875
+                y_texto = (c_inf+c_sup)*0.6
+                etiqueta="Concentración"
+            
             ruta_sol = os.path.join(os.getcwd(),dir_sol,arch_sol)
-            ruta_img1 = os.path.join(os.getcwd(),dir_img,arch_img1)
-            ruta_img2 = os.path.join(os.getcwd(), dir_img, arch_img2)
+            ruta_img = os.path.join(os.getcwd(),dir_img,arch_img)
 
             try:
                 os.mkdir(dir_img)
@@ -187,62 +217,28 @@ def main(archivo_input):
             # Datos de solución para el gráfico
             solucion = np.loadtxt(ruta_sol)
 
-            # Texto para el gráfico 1D
-            titulo = "C (t = {:5.1f} min, y = 0 m)".format(t/60)
-            nom_x = "L$_x$ [m]"
-            nom_y = "C [kg/m$^3$]"
-            c_inf = 0
-            orden = np.abs(np.int(np.floor(np.log10(cu_desc_cont/v_cel))))
-            c_sup = np.around(cu_desc_cont/v_cel,decimals=orden)
-            texto = "{}".format(metodo) +\
-                    "\n$\Delta$x: {:04.1f} m".format(dx) +\
-                    "\n$\Delta$y: {:04.1f} m".format(dy) +\
-                    "\n$\Delta$t: {:.1f} s".format(dt)
-            x_texto = (x_ini+x_fin)*0.875
-            y_texto = (c_inf+c_sup)*0.5
-            etiqueta="Concentración"
-
-            # Impresión del gráfico 1D
+            # Impresión del gráfico
             plt.figure()
             plt.title(titulo)
             plt.xlabel(nom_x)
             plt.ylabel(nom_y)
-            plt.ylim(c_inf,c_sup)
-            plt.text(x_texto, y_texto, texto, 
+            
+            if dim_img == 1:
+                plt.ylim(c_inf,c_sup)
+                plt.text(x_texto, y_texto, texto, 
                      va="center", ha="center")
-            plt.plot(xs, solucion[y_img], "r", label=etiqueta)
-            plt.legend(loc="upper right", framealpha=1)
-            plt.savefig(ruta_img1)
+                plt.plot(xs, solucion[y_img], "r", label=etiqueta)
+                plt.legend(loc="upper right", framealpha=1)
+
+            else :
+                solucion = np.loadtxt(ruta_sol)
+                plt.contourf(xs, ys, solucion*1000)
+                cbar = plt.colorbar()
+                cbar.ax.set_title('[gr/m3]').labelpad = 15
+            
+            plt.savefig(ruta_img)
             plt.clf()
-            plt.close()
-            
-            # Texto para el gráfico 2D
-            titulo = "C [gr/m3] (t = {:5.1f} min)".format(t/60)
-            nom_x = "x [m]"
-            nom_y = "y [m]"
-            c_inf = 0
-            orden = np.abs(np.int(np.floor(np.log10(cu_desc_cont/v_cel))))
-            c_sup = np.around(cu_desc_cont/v_cel,decimals=orden)
-            texto = "{}".format(metodo) +\
-                    "\n$\Delta$x: {:04.1f} m".format(dx) +\
-                    "\n$\Delta$y: {:04.1f} m".format(dy) +\
-                    "\n$\Delta$t: {:.1f} s".format(dt)
-            x_texto = (x_ini+x_fin)*0.875
-            y_texto = (c_inf+c_sup)*0.5
-            etiqueta="Concentración"
-            
-            solucion = np.loadtxt(ruta_sol)
-            # Impresión del gráfico 2D
-            plt.figure()
-            plt.title(titulo)
-            plt.xlabel(nom_x)
-            plt.ylabel(nom_y)
-            plt.contourf(xs,ys,solucion*1000)
-            plt.colorbar()
-            plt.savefig(ruta_img2)
-            plt.clf()
-            plt.close()
-            
+            plt.close()            
 
     #**** FIN MAIN ****#
     
